@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import MsalProviderWrapper from '@/components/MsalProviderWrapper' 
 import './globals.css'
 
 const geist = Geist({ 
@@ -50,8 +51,10 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${geist.variable} ${geistMono.variable} bg-background`}>
       <body className="font-sans antialiased min-h-screen">
-        {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        <MsalProviderWrapper>  {/* <-- ENVUELVE A LOS CHILDREN */}
+          {children}
+          {process.env.NODE_ENV === 'production' && <Analytics />}
+        </MsalProviderWrapper> {/* <-- CIERRE DEL WRAPPER */}
       </body>
     </html>
   )
