@@ -1,0 +1,53 @@
+name: CI/CD Pipeline - Frontend
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: us-east-1
+  CLUSTER_NAME: sanosysalvos-cluster
+
+jobs:
+  build-and-push-docker:
+    name: Build & Push Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+
+      - name: Iniciar sesión en Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Construir y Subir imagen Frontend
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/sanosysalvos-frontend:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/sanosysalvos-frontend:latest
+
+  deploy-to-aws:
+    name: Deploy Frontend to AWS EKS
+    needs: build-and-push-docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+        
+      - name: Conectar con Cluster EKS
+        run: aws eks update-kubeconfig --name ${{ env.CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+      - name: Aplicar Cambios en Kubernetes
+        run: |
+          kubectl apply -f ./k8s/
+          kubectl rollout restart deployment frontend-deployment

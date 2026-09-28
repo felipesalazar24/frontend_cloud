@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -10,7 +11,7 @@ const nextConfig = {
     return [
       {
         source: '/api-bff/:path*',
-        destination: 'http://localhost:8084/api/v1/bff/web/:path*',
+        destination: `${process.env.BFF_INTERNAL_URL || 'http://localhost:8084'}/api/v1/bff/web/:path*`,
       },
     ];
   },
