@@ -10,7 +10,7 @@ const nextConfig = {
     return [
       {
         source: '/api-bff/:path*',
-        destination: 'http://api-gateway:8086/api/v1/bff/web/:path*',
+        destination: 'http://localhost:8084/api/v1/bff/web/:path*',
       },
     ];
   },

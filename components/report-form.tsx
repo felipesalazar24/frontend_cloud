@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MapPin, Send, Info } from 'lucide-react';
+import { useMsal } from '@azure/msal-react';
 
 const COLORS = [
   'Negro',
@@ -43,32 +44,19 @@ interface PetType {
   breed: string; 
 }
 
-function parseJwt(token: string): Record<string, any> | null {
-  try {
-    const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
-  }
-}
-
 export function ReportForm({ 
   userCountry = 'Chile',
   userCity = '',
   userId
 }: ReportFormProps) {
+  
+  // 1. EL HOOK DE MICROSOFT AHORA ESTÁ ADENTRO DEL COMPONENTE
+  const { instance, accounts } = useMsal();
+
   const [petTypes, setPetTypes] = useState<PetType[]>([]);
   const [selectedTypeId, setSelectedTypeId] = useState<string>('');
   const [loadingTypes, setLoadingTypes] = useState<boolean>(true);
-  const [status, setStatus] = useState<'extraviado' | 'encontrado'>('extraviado');
+  const [status, setStatus] = useState<'perdido' | 'encontrado'>('perdido');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
@@ -79,33 +67,44 @@ export function ReportForm({
   useEffect(() => {
     const loadPetTypes = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api-bff/pets/pet-types', { 
+        if (accounts.length === 0) return;
+
+        const tokenResponse = await instance.acquireTokenSilent({
+          scopes: ["c538c4d3-453d-4aec-bcaa-a917b8dd245e/.default"], 
+          account: accounts[0]
+        });
+
+        const response = await fetch('http://localhost:8084/api/v1/bff/web/pets/pet-types', { 
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${tokenResponse.accessToken}`,
             'Content-Type': 'application/json'
           }
         });
 
         if (response.ok) {
           const data = await response.json();
-          const typesArray = data.collection || []
-          if (Array.isArray(typesArray)) {
-            setPetTypes(typesArray);
-            if (typesArray.length > 0) setSelectedTypeId(typesArray[0].id.toString());
-          }
+          // Extrae los datos sin importar si vienen como Array directo o dentro de "collection"
+          const typesArray = Array.isArray(data) ? data : (data.collection || []);
+          
+          setPetTypes(typesArray);
+          if (typesArray.length > 0) setSelectedTypeId(typesArray[0].id.toString());
+        } else {
+          console.error("Error del backend al cargar tipos de mascota:", response.status);
         }
       } catch (err) {
-        console.error(err);
+        console.error("Error de red al cargar tipos:", err);
       } finally {
         setLoadingTypes(false);
       }
     };
 
-    loadPetTypes();
-  }, []);
+    if (accounts.length > 0) {
+      loadPetTypes();
+    }
+  }, [accounts, instance]);
 
+  // 2. SOLO HAY UN HANDLESUBMIT, COMPLETAMENTE LIMPIO
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError('');
@@ -122,26 +121,30 @@ export function ReportForm({
     const fullLocation = locationParts.join(', ');
 
     try {
-      const token = localStorage.getItem('token');
+      if (accounts.length === 0) throw new Error("No hay sesión activa");
+
+      const tokenResponse = await instance.acquireTokenSilent({
+        scopes: ["c538c4d3-453d-4aec-bcaa-a917b8dd245e/.default"], 
+        account: accounts[0]
+      });
+      const token = tokenResponse.accessToken;
+
       let finalUserId: number = Number(userId);
 
       if (!finalUserId || isNaN(finalUserId) || finalUserId === 1) {
-        if (token) {
-          const payload = parseJwt(token);
-          const email = payload?.sub || payload?.email;
-          if (email) {
-            const userResponse = await fetch(`/api-bff/users/profile?email=${encodeURIComponent(email)}`, {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            if (userResponse.ok) {
-              const userData = await userResponse.json();
-              if (userData && userData.id) {
-                finalUserId = Number(userData.id);
-              }
+        const email = accounts[0].username;
+        if (email) {
+          const userResponse = await fetch(`http://localhost:8084/api/v1/bff/web/users/profile?email=${encodeURIComponent(email)}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            if (userData && userData.id) {
+              finalUserId = Number(userData.id);
             }
           }
         }
@@ -163,7 +166,7 @@ export function ReportForm({
         status: status,
       };
 
-      const response = await fetch('/api-bff/pets', { 
+      const response = await fetch('http://localhost:8084/api/v1/bff/web/pets', { 
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -195,9 +198,9 @@ export function ReportForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Tabs value={status} onValueChange={(v) => setStatus(v as 'extraviado' | 'encontrado')}>
+      <Tabs value={status} onValueChange={(v) => setStatus(v as 'perdido' | 'encontrado')}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="extraviado" className="gap-2">
+          <TabsTrigger value="perdido" className="gap-2">
             <span className="h-2 w-2 rounded-full bg-destructive" />
             Perdí mi mascota
           </TabsTrigger>
@@ -207,7 +210,7 @@ export function ReportForm({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="extraviado" className="mt-4">
+        <TabsContent value="perdido" className="mt-4">
           <p className="text-sm text-muted-foreground mb-4">
             Completa los datos de tu mascota perdida. Mientras más información proporciones, 
             mejor será la probabilidad de encontrar coincidencias.
@@ -340,7 +343,7 @@ export function ReportForm({
             Ubicación
           </CardTitle>
           <CardDescription>
-            {status === 'extraviado'
+            {status === 'perdido'
               ? '¿Dónde viste a tu mascota por última vez?'
               : '¿Dónde encontraste a la mascota?'
             }

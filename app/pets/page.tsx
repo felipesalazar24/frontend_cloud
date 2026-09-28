@@ -2,12 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMsal } from "@azure/msal-react"; 
+import Link from 'next/link';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, Calendar, FilterX } from 'lucide-react';
@@ -16,26 +18,24 @@ interface PetReport {
   id: string;
   name: string;
   ageCategory?: string;
-  age_category?: string;
-  typeId?: number | string;
-  type_id?: string;
+  typeId?: number;
   userId?: number;
-  user_id?: string;
   lastSeenLocation?: string;
-  last_seen_location?: string;
   lastSeenDate?: string;
-  last_seen_date?: string;
   color: string;
   description: string;
-  status: 'extraviado' | 'encontrado';
+  status: 'encontrado' | 'reunido' | 'PERDIDO';
 }
 
 const COLORS = ['Todos', 'Negro', 'Blanco', 'Gris', 'Marrón', 'Dorado', 'Rojo', 'Blanco con Negro', 'Blanco con Marrón', 'Blanco con Gris', 'Otro'];
 const AGE_CATEGORIES = ['Todos', 'Joven', 'Adulto', 'Viejo'];
-const STATUS_OPTIONS = ['Todos', 'Extraviado', 'Encontrado'];
+const STATUS_OPTIONS = ['Todos', 'PERDIDO', 'Encontrado', 'Reunido'];
 
 export default function PetsPage() {
   const router = useRouter();
+  
+  const { instance, accounts, inProgress } = useMsal(); 
+
   const [reports, setReports] = useState<PetReport[]>([]);
   const [filteredReports, setFilteredReports] = useState<PetReport[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -49,13 +49,27 @@ export default function PetsPage() {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
+
+        if (inProgress !== "none") {
+          console.log("Autenticación en progreso, esperando...");
+          return;
+        }
+
+        if (accounts.length === 0) {
           router.push('/login');
           return;
         }
 
-        const response = await fetch('/api-bff/pets', {
+        const tokenResponse = await instance.acquireTokenSilent({
+          scopes: ["c538c4d3-453d-4aec-bcaa-a917b8dd245e/.default"], 
+          account: accounts[0]
+        });
+
+        const token = tokenResponse.accessToken;
+        
+        console.log("Token a enviar:", token);
+
+        const response = await fetch('http://localhost:8084/api/v1/bff/web/pets', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -63,23 +77,36 @@ export default function PetsPage() {
           }
         });
 
+        if (response.status === 401 || response.status === 403) {
+          console.error("Token rechazado por el BFF.");
+          router.push('/login');
+          return;
+        }
+
         if (!response.ok) {
           throw new Error('Failed to fetch pet reports');
         }
 
         const data = await response.json();
-        const petsArray = data.collection || [];
+        const petsArray = Array.isArray(data) ? data : (data.collection || []);
+        
         setReports(petsArray);
         setFilteredReports(petsArray);
       } catch (err: any) {
-        setError(err.message || 'Error loading reports');
+        if (err.name === 'InteractionRequiredAuthError') {
+            router.push('/login');
+        } else {
+            setError(err.message || 'Error loading reports');
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchReports();
-  }, [router]);
+    if (accounts.length > 0) {
+        fetchReports();
+    }
+  }, [router, accounts, instance]);
 
   useEffect(() => {
     let result = reports;
@@ -88,7 +115,7 @@ export default function PetsPage() {
       const query = searchQuery.toLowerCase();
       result = result.filter(report => {
         const name = report.name?.toLowerCase() || '';
-        const location = (report.lastSeenLocation || report.last_seen_location || '').toLowerCase();
+        const location = (report.lastSeenLocation || '').toLowerCase();
         const description = report.description?.toLowerCase() || '';
         return name.includes(query) || location.includes(query) || description.includes(query);
       });
@@ -100,14 +127,14 @@ export default function PetsPage() {
 
     if (selectedAge !== 'Todos') {
       result = result.filter(report => {
-        const age = (report.ageCategory || report.age_category || '').toLowerCase();
+        const age = (report.ageCategory || '').toLowerCase();
         return age === selectedAge.toLowerCase();
       });
     }
 
     if (selectedStatus !== 'Todos') {
-      const statusValue = selectedStatus === 'Extraviado' ? 'extraviado' : 'encontrado';
-      result = result.filter(report => report.status === statusValue);
+      const statusValue = selectedStatus.toLowerCase();
+      result = result.filter(report => report.status.toLowerCase() === statusValue);
     }
 
     setFilteredReports(result);
@@ -230,40 +257,44 @@ export default function PetsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredReports.map((report) => (
-                  <Card key={report.id} className="overflow-hidden flex flex-col justify-between">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge variant={report.status === 'extraviado' ? 'destructive' : 'secondary'}>
-                          {report.status === 'extraviado' ? 'Extraviado' : 'Encontrado'}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded capitalize">
-                          {report.ageCategory || report.age_category || 'N/A'}
-                        </span>
-                      </div>
-                      <CardTitle className="text-xl capitalize">{report.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 flex-1">
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {report.description}
-                      </p>
-                      
-                      <div className="space-y-1.5 pt-2 border-t text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-foreground">Color:</span> {report.color}
+                  <Link href={`/reporte/${report.id}`} key={report.id} className="block transition-transform hover:scale-[1.02]">
+                    <Card className="overflow-hidden flex flex-col justify-between h-full cursor-pointer">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <Badge variant={report.status.toLowerCase() === 'perdido' ? 'destructive' : 'secondary'}>
+                            {report.status.toUpperCase()}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded capitalize">
+                            {report.ageCategory || 'N/A'}
+                          </span>
                         </div>
-                        <div className="flex items-start gap-2">
-                          <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                          <span>{report.lastSeenLocation || report.last_seen_location || 'N/A'}</span>
+                        <CardTitle className="text-xl capitalize">{report.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4 flex-1">
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                          {report.description}
+                        </p>
+                        
+                        <div className="space-y-1.5 pt-2 border-t text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-foreground">Color:</span> {report.color}
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                            <span>{report.lastSeenLocation || 'N/A'}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span>{formatDate(report.lastSeenDate)}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
-                          <span>{formatDate(report.lastSeenDate || report.last_seen_date)}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
+              </div>
               </div>
             )}
           </div>

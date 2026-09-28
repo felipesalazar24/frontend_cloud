@@ -5,45 +5,41 @@ import { useRouter } from 'next/navigation';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { ReportForm } from '@/components/report-form';
-
-function parseJwt(token: string): Record<string, any> | null {
-  try {
-    const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
-  }
-}
+import { useMsal } from '@azure/msal-react';
 
 export default function CreateReportPage() {
   const router = useRouter();
+  
+  // 1. Traemos la sesión de MSAL y el estado de carga
+  const { accounts, inProgress } = useMsal();
+  
   const [userCity, setUserCity] = useState<string>('');
   const [userCountry, setUserCountry] = useState<string>('');
   const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    // 2. Freno de mano: Esperamos a que MSAL termine de cargar la sesión oculta
+    if (inProgress !== "none") {
+      return;
+    }
+
+    // 3. Si terminó de cargar y no hay sesión activa, al login
+    if (accounts.length === 0) {
       router.push('/login');
       return;
     }
 
-    const payload = parseJwt(token);
+    // 4. Si hay sesión, sacamos los datos directamente de la cuenta de Microsoft
+    const activeAccount = accounts[0];
+    const idTokenClaims = activeAccount?.idTokenClaims as any;
     
-    setUserCity(payload?.city || '');
-    setUserCountry(payload?.country || '');
-    setUserId(payload?.id || payload?.sub || '');
+    setUserCity(idTokenClaims?.city || '');
+    setUserCountry(idTokenClaims?.country || '');
+    setUserId(activeAccount?.localAccountId || '');
+    
     setLoading(false);
-  }, [router]);
+  }, [router, accounts, inProgress]);
 
   if (loading) {
     return (

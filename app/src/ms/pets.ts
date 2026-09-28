@@ -2,7 +2,7 @@ const BASE_URL = 'http://localhost:8084/api/v1/bff/web/pets';
 
 export type AgeCategory = 'joven' | 'adulto' | 'viejo';
 
-export type PetStatus = 'extraviado' | 'encontrado';
+export type PetStatus = 'perdido' | 'encontrado';
 
 export interface PetType {
   id: string;

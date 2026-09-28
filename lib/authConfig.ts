@@ -2,8 +2,8 @@ import { Configuration, PublicClientApplication } from "@azure/msal-browser";
 
 export const msalConfig: Configuration = {
   auth: {
-    clientId: "TU_CLIENT_ID_DE_AZURE", // Reemplazar con el Client ID de tu App Registration en Azure
-    authority: "https://login.microsoftonline.com/TU_TENANT_ID", // Reemplazar con tu Tenant ID
+    clientId: "c538c4d3-453d-4aec-bcaa-a917b8dd245e",
+    authority: "https://login.microsoftonline.com/30702ecf-e2f2-4cb7-a22e-fa152f6ff961",
     redirectUri: "http://localhost:3000", 
   },
   cache: {
@@ -12,7 +12,7 @@ export const msalConfig: Configuration = {
 };
 
 export const loginRequest = {
-  scopes: ["api://TU_CLIENT_ID_DEL_API/access_as_user"] // Reemplazar con el scope que configuraste en tu backend
+  scopes: ["User.Read"],
 };
 
 export const msalInstance = new PublicClientApplication(msalConfig);
