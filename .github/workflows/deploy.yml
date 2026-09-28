@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  CLUSTER_NAME: sanosysalvos-cluster
+  CLUSTER_NAME: sanosysalvos-cluester
 
 jobs:
   build-and-push-docker:
