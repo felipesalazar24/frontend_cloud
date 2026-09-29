@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: tu-usuario-docker/sanosysalvos-frontend:latest
+        image: felipesalazar24/sanosysalvos-frontend:latest
         ports:
         - containerPort: 3000
         env:
