@@ -70,7 +70,7 @@ export function ReportForm({
         if (accounts.length === 0) return;
 
         const tokenResponse = await instance.acquireTokenSilent({
-          scopes: ["c538c4d3-453d-4aec-bcaa-a917b8dd245e/.default"], 
+          scopes: ["a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"], 
           account: accounts[0]
         });
 
@@ -124,7 +124,7 @@ export function ReportForm({
       if (accounts.length === 0) throw new Error("No hay sesión activa");
 
       const tokenResponse = await instance.acquireTokenSilent({
-        scopes: ["c538c4d3-453d-4aec-bcaa-a917b8dd245e/.default"], 
+        scopes: ["a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"], 
         account: accounts[0]
       });
       const token = tokenResponse.accessToken;
