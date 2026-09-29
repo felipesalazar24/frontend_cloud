@@ -54,7 +54,7 @@ export default function ReportePage() {
 
         const activeAccount = accounts[0];
         const tokenResponse = await instance.acquireTokenSilent({
-          scopes: ["c538c4d3-453d-4aec-bcaa-a917b8dd245e/.default"],
+          scopes: ["a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"],
           account: activeAccount
         });
 
