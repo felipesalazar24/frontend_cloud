@@ -59,7 +59,7 @@ export default function ReportePage() {
         });
 
         // 1. Buscamos la mascota
-        const petResponse = await fetch(`http://localhost:8084/api/v1/bff/web/pets/${id}`, {
+        const petResponse = await fetch(`https://ih20amtq1d.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/pets/${id}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${tokenResponse.accessToken}`,
@@ -75,7 +75,7 @@ export default function ReportePage() {
         if (petData.userId) {
           try {
             // Ajusta esta URL si tu endpoint para obtener un usuario por ID es diferente
-            const userResponse = await fetch(`http://localhost:8084/api/v1/bff/web/users/${petData.userId}`, {
+            const userResponse = await fetch(`https://ih20amtq1d.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/users/${petData.userId}`, {
               method: 'GET',
               headers: {
                 'Authorization': `Bearer ${tokenResponse.accessToken}`,
