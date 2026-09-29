@@ -37,7 +37,7 @@ export default function ProfilePage() {
         const token = tokenResponse.accessToken;
 
         let myUserId = null;
-        const userResponse = await fetch(`http://localhost:8084/api/v1/bff/web/users/profile?email=${encodeURIComponent(email)}`, {
+        const userResponse = await fetch(`https://ih20amtq1d.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/users/profile?email=${encodeURIComponent(email)}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -50,7 +50,7 @@ export default function ProfilePage() {
           myUserId = Number(userData.id);
         }
 
-        const petsResponse = await fetch('http://localhost:8084/api/v1/bff/web/pets', {
+        const petsResponse = await fetch('https://ih20amtq1d.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/pets', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,

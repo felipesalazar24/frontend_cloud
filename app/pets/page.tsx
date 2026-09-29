@@ -69,7 +69,7 @@ export default function PetsPage() {
         
         console.log("Token a enviar:", token);
 
-        const response = await fetch('http://localhost:8084/api/v1/bff/web/pets', {
+        const response = await fetch('https://ih20amtq1d.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/pets', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
