@@ -12,7 +12,7 @@ export const msalConfig: Configuration = {
 };
 
 export const loginRequest = {
-  scopes: ["api://a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"],
+  scopes: ["api://a4d3e345-3a3d-45e3-a248-a07a76da5e1b/access_as_user"],
 };
 
 export const msalInstance = new PublicClientApplication(msalConfig);
