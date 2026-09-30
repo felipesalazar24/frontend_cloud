@@ -31,7 +31,7 @@ export default function ProfilePage() {
         const email = activeAccount.username;
 
         const tokenResponse = await instance.acquireTokenSilent({
-          scopes: ["api://a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"],
+          scopes: ["user.read"],
           account: activeAccount
         });
         const token = tokenResponse.accessToken;
