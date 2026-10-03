@@ -4,14 +4,14 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { 
-  PawPrint, 
-  MapPin, 
-  Search, 
-  Bell, 
-  Shield, 
-  Clock, 
-  Users, 
+import {
+  PawPrint,
+  MapPin,
+  Search,
+  Bell,
+  Shield,
+  Clock,
+  Users,
   ArrowRight,
   Dog,
   Cat,
@@ -29,7 +29,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
+
       <main className="flex-1">
         <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background py-20 lg:py-32">
           <div className="container mx-auto px-4">
@@ -38,16 +38,16 @@ export default function HomePage() {
                 <Heart className="h-3 w-3 mr-1 fill-destructive text-destructive" />
                 Plataforma de bienestar animal
               </Badge>
-              
+
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-balance">
                 Reunimos mascotas perdidas con sus familias
               </h1>
-              
+
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto text-pretty">
-                Sanos y Salvos centraliza la búsqueda de mascotas perdidas, conectando a dueños, 
+                Sanos y Salvos centraliza la búsqueda de mascotas perdidas, conectando a dueños,
                 clínicas veterinarias y refugios con tecnología de coincidencia inteligente.
               </p>
-              
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                 <Link href="/create-report?type=lost">
                   <Button size="lg" className="w-full sm:w-auto gap-2">
@@ -167,9 +167,9 @@ export default function HomePage() {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recentReports.map((report) => (
-                <ReportCard key={report.id} report={report} />
-              ))}
+              <div className="col-span-full text-center p-8 border rounded-lg bg-muted/20">
+                <p className="text-muted-foreground">Los reportes recientes se están sincronizando con la base de datos...</p>
+              </div>
             </div>
           </div>
         </section>
@@ -243,7 +243,7 @@ export default function HomePage() {
                   ¿Perdiste o encontraste una mascota?
                 </h2>
                 <p className="text-primary-foreground/80 mb-8 max-w-xl mx-auto">
-                  Cada minuto cuenta. Reporta ahora y deja que nuestra tecnología 
+                  Cada minuto cuenta. Reporta ahora y deja que nuestra tecnología
                   te ayude a reunir a esa mascota con su familia.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
