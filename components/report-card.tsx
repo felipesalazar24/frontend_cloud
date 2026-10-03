@@ -16,8 +16,15 @@ const petTypeIcons: Record<string, any> = {
 export function ReportCard({ report, compact = false }: { report: any, compact?: boolean }) {
   const PetIcon = petTypeIcons[String(report.petType).toLowerCase()] || HelpCircle;
   
-  // Aseguramos que tome el ID sin importar cómo lo envíe el backend
   const petId = report.id || report.petId || report.idMascota;
+
+  // Función para manejar con seguridad el objeto location sin romper React
+  const getLocationText = () => {
+    if (typeof report.location === 'object' && report.location !== null) {
+      return report.location.address || report.location.city || "Ubicación no especificada";
+    }
+    return report.location || report.address || "Ubicación no especificada";
+  };
   
   return (
     <Link href={`/reporte/${petId}`} className="block transition-transform hover:scale-[1.02]">
@@ -70,7 +77,7 @@ export function ReportCard({ report, compact = false }: { report: any, compact?:
             <div className="flex flex-col gap-1 text-sm text-muted-foreground mt-4">
               <div className="flex items-center gap-2">
                 <MapPin className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{report.location || report.address || "Ubicación no especificada"}</span>
+                <span className="truncate">{getLocationText()}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-3.5 w-3.5 shrink-0" />
