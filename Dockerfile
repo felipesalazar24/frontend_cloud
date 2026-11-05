@@ -9,7 +9,11 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Construye la aplicación
+
+# Copia el archivo de entorno específico de producción como .env para que Next.js lo lea
+COPY .env.production .env
+
+# Construye la aplicación (ahora leerá la URL correcta automáticamente)
 RUN npm run build
 
 # Etapa 3: Producción
