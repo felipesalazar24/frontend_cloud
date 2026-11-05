@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMsal } from "@azure/msal-react"; 
+import { useMsal } from "@azure/msal-react";
 import Link from 'next/link';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
@@ -33,8 +33,8 @@ const STATUS_OPTIONS = ['Todos', 'PERDIDO', 'Encontrado', 'Reunido'];
 
 export default function PetsPage() {
   const router = useRouter();
-  
-  const { instance, accounts, inProgress } = useMsal(); 
+
+  const { instance, accounts, inProgress } = useMsal();
 
   const [reports, setReports] = useState<PetReport[]>([]);
   const [filteredReports, setFilteredReports] = useState<PetReport[]>([]);
@@ -61,15 +61,15 @@ export default function PetsPage() {
         }
 
         const tokenResponse = await instance.acquireTokenSilent({
-          scopes: ["a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"], 
+          scopes: ["a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"],
           account: accounts[0]
         });
 
         const token = tokenResponse.accessToken;
-        
+
         console.log("Token a enviar:", token);
 
-        const response = await fetch('https://achieving-peripherals-encouraged-contacted.trycloudflare.com/api/v1/bff/web/pets', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bff/web/pets`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -89,14 +89,14 @@ export default function PetsPage() {
 
         const data = await response.json();
         const petsArray = Array.isArray(data) ? data : (data.collection || []);
-        
+
         setReports(petsArray);
         setFilteredReports(petsArray);
       } catch (err: any) {
         if (err.name === 'InteractionRequiredAuthError') {
-            router.push('/login');
+          router.push('/login');
         } else {
-            setError(err.message || 'Error loading reports');
+          setError(err.message || 'Error loading reports');
         }
       } finally {
         setLoading(false);
@@ -104,7 +104,7 @@ export default function PetsPage() {
     };
 
     if (accounts.length > 0) {
-        fetchReports();
+      fetchReports();
     }
   }, [router, accounts, instance]);
 
@@ -258,43 +258,43 @@ export default function PetsPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredReports.map((report) => (
-                  <Link href={`/reporte/${report.id}`} key={report.id} className="block transition-transform hover:scale-[1.02]">
-                    <Card className="overflow-hidden flex flex-col justify-between h-full cursor-pointer">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge variant={report.status.toLowerCase() === 'perdido' ? 'destructive' : 'secondary'}>
-                            {report.status.toUpperCase()}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded capitalize">
-                            {report.ageCategory || 'N/A'}
-                          </span>
-                        </div>
-                        <CardTitle className="text-xl capitalize">{report.name}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4 flex-1">
-                        <p className="text-sm text-muted-foreground line-clamp-3">
-                          {report.description}
-                        </p>
-                        
-                        <div className="space-y-1.5 pt-2 border-t text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-foreground">Color:</span> {report.color}
+                  {filteredReports.map((report) => (
+                    <Link href={`/reporte/${report.id}`} key={report.id} className="block transition-transform hover:scale-[1.02]">
+                      <Card className="overflow-hidden flex flex-col justify-between h-full cursor-pointer">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <Badge variant={report.status.toLowerCase() === 'perdido' ? 'destructive' : 'secondary'}>
+                              {report.status.toUpperCase()}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded capitalize">
+                              {report.ageCategory || 'N/A'}
+                            </span>
                           </div>
-                          <div className="flex items-start gap-2">
-                            <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                            <span>{report.lastSeenLocation || 'N/A'}</span>
+                          <CardTitle className="text-xl capitalize">{report.name}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 flex-1">
+                          <p className="text-sm text-muted-foreground line-clamp-3">
+                            {report.description}
+                          </p>
+
+                          <div className="space-y-1.5 pt-2 border-t text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-foreground">Color:</span> {report.color}
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                              <span>{report.lastSeenLocation || 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
+                              <span>{formatDate(report.lastSeenDate)}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            <span>{formatDate(report.lastSeenDate)}</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
               </div>
             )}
           </div>
