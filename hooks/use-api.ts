@@ -20,7 +20,9 @@ export function useApi() {
             'Content-Type': 'application/json'
         };
 
-        const fullUrl = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
+        const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+        const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+        const fullUrl = endpoint.startsWith('http') ? endpoint : `${cleanBaseUrl}${cleanEndpoint}`;
 
         return fetch(fullUrl, { ...options, headers });
     };
