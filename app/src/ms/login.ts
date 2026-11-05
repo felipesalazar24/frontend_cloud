@@ -1,6 +1,6 @@
 // src/app/ms/login.ts
 
-const LOGIN_URL = "https://instrument-screening-publishing-causes.trycloudflare.com/api/v1/bff/web/login";
+const LOGIN_URL = "https://recently-nursing-decimal-isaac.trycloudflare.com/api/v1/bff/web/login";
 
 export async function loginUser({
   email,

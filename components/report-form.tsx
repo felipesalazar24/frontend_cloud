@@ -74,7 +74,7 @@ export function ReportForm({
           account: accounts[0]
         });
 
-        const response = await fetch('https://instrument-screening-publishing-causes.trycloudflare.com/api/v1/bff/web/pets/pet-types', { 
+        const response = await fetch('https://recently-nursing-decimal-isaac.trycloudflare.comapi/v1/bff/web/pets/pet-types', { 
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${tokenResponse.accessToken}`,
@@ -134,7 +134,7 @@ export function ReportForm({
       if (!finalUserId || isNaN(finalUserId) || finalUserId === 1) {
         const email = accounts[0].username;
         if (email) {
-          const userResponse = await fetch(`https://instrument-screening-publishing-causes.trycloudflare.com/api/v1/bff/web/users/profile?email=${encodeURIComponent(email)}`, {
+          const userResponse = await fetch(`https://recently-nursing-decimal-isaac.trycloudflare.com/api/v1/bff/web/users/profile?email=${encodeURIComponent(email)}`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -166,7 +166,7 @@ export function ReportForm({
         status: status,
       };
 
-      const response = await fetch('https://instrument-screening-publishing-causes.trycloudflare.com/api/v1/bff/web/pets', { 
+      const response = await fetch('https://recently-nursing-decimal-isaac.trycloudflare.com/api/v1/bff/web/pets', { 
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

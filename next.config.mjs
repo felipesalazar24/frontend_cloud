@@ -11,7 +11,7 @@ const nextConfig = {
     return [
       {
         source: '/api-bff/:path*',
-        destination: `${process.env.BFF_INTERNAL_URL || 'https://instrument-screening-publishing-causes.trycloudflare.com/api/v1/bff/web/:path*'}`,
+        destination: `${process.env.BFF_INTERNAL_URL || 'https://recently-nursing-decimal-isaac.trycloudflare.com/api/v1/bff/web/:path*'}`,
       },
     ];
   },
