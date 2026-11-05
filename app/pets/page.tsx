@@ -69,7 +69,7 @@ export default function PetsPage() {
         
         console.log("Token a enviar:", token);
 
-        const response = await fetch('https://robin-bit-component-charitable.trycloudflare.com/api/v1/bff/web/pets', {
+        const response = await fetch('https://achieving-peripherals-encouraged-contacted.trycloudflare.com/api/v1/bff/web/pets', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,

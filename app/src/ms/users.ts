@@ -1,6 +1,6 @@
 // app/src/ms/users.ts
 
-const BASE_URL = 'https://robin-bit-component-charitable.trycloudflare.com/api/v1/bff/web/users';
+const BASE_URL = 'https://achieving-peripherals-encouraged-contacted.trycloudflare.com/api/v1/bff/web/users';
 
 function getAuthHeader(): Record<string, string> {
   if (typeof window !== "undefined") {

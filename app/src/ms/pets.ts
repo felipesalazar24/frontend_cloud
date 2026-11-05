@@ -1,4 +1,4 @@
-const BASE_URL = 'https://robin-bit-component-charitable.trycloudflare.com/api/v1/bff/web/pets';
+const BASE_URL = 'https://achieving-peripherals-encouraged-contacted.trycloudflare.com/api/v1/bff/web/pets';
 
 export type AgeCategory = 'joven' | 'adulto' | 'viejo';
 
