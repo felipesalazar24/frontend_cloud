@@ -4,7 +4,7 @@ import { loginRequest } from "@/lib/authConfig";
 
 export function useApi() {
     const { instance, accounts } = useMsal();
-    const baseUrl = process.env.NEXT_PUBLIC_BFF_URL || "http://localhost:8084";
+    const baseUrl = "http://52.55.217.236:8084";
 
     const fetchWithToken = async (endpoint: string, options: RequestInit = {}) => {
         const request = {
