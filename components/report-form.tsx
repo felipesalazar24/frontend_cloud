@@ -74,7 +74,7 @@ export function ReportForm({
           account: accounts[0]
         });
 
-        const response = await fetch('https://recently-nursing-decimal-isaac.trycloudflare.comapi/v1/bff/web/pets/pet-types', { 
+        const response = await fetch('https://recently-nursing-decimal-isaac.trycloudflare.com/api/v1/bff/web/pets/pet-types', { 
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${tokenResponse.accessToken}`,
