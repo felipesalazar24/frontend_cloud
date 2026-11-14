@@ -11,7 +11,7 @@ const nextConfig = {
     return [
       {
         source: '/api-bff/:path*',
-        destination: `${process.env.BFF_INTERNAL_URL || 'https://strike-haven-palace-diverse.trycloudflare.com/api/v1/bff/web/:path*'}`,
+        destination: `${process.env.BFF_INTERNAL_URL || 'https://vtfhilb6xc.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/:path*'}`,
       },
     ];
   },

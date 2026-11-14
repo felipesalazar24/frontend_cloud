@@ -41,15 +41,15 @@ interface ReportFormProps {
 interface PetType {
   id: number;
   nameType: string;
-  breed: string; 
+  breed: string;
 }
 
-export function ReportForm({ 
+export function ReportForm({
   userCountry = 'Chile',
   userCity = '',
   userId
 }: ReportFormProps) {
-  
+
   // 1. EL HOOK DE MICROSOFT AHORA ESTÁ ADENTRO DEL COMPONENTE
   const { instance, accounts } = useMsal();
 
@@ -70,11 +70,11 @@ export function ReportForm({
         if (accounts.length === 0) return;
 
         const tokenResponse = await instance.acquireTokenSilent({
-          scopes: ["a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"], 
+          scopes: ["a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"],
           account: accounts[0]
         });
 
-        const response = await fetch('https://sjkgnhoa12.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/pets/pet-types', { 
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bff/web/pets/pet-types`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${tokenResponse.accessToken}`,
@@ -86,7 +86,7 @@ export function ReportForm({
           const data = await response.json();
           // Extrae los datos sin importar si vienen como Array directo o dentro de "collection"
           const typesArray = Array.isArray(data) ? data : (data.collection || []);
-          
+
           setPetTypes(typesArray);
           if (typesArray.length > 0) setSelectedTypeId(typesArray[0].id.toString());
         } else {
@@ -114,7 +114,7 @@ export function ReportForm({
     const formElement = e.currentTarget;
     const formData = new FormData(formElement);
     const approximateAddress = formData.get('lastSeenLocation') as string;
-    
+
     const locationParts = [userCountry, userCity, approximateAddress].filter(
       part => part && part.trim() !== '' && part !== 'Tu ciudad'
     );
@@ -124,7 +124,7 @@ export function ReportForm({
       if (accounts.length === 0) throw new Error("No hay sesión activa");
 
       const tokenResponse = await instance.acquireTokenSilent({
-        scopes: ["a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"], 
+        scopes: ["a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"],
         account: accounts[0]
       });
       const token = tokenResponse.accessToken;
@@ -134,7 +134,7 @@ export function ReportForm({
       if (!finalUserId || isNaN(finalUserId) || finalUserId === 1) {
         const email = accounts[0].username;
         if (email) {
-          const userResponse = await fetch(`http://52.55.217.236:8084/api/v1/bff/web/users/profile?email=${encodeURIComponent(email)}`, {
+          const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bff/web/users/profile?email=${encodeURIComponent(email)}`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -156,17 +156,17 @@ export function ReportForm({
 
       const reportPayload = {
         name: petName || 'Desconocido',
-        ageCategory: selectedAge, 
-        typeId: Number(selectedTypeId), 
-        userId: finalUserId, 
-        lastSeenLocation: fullLocation, 
+        ageCategory: selectedAge,
+        typeId: Number(selectedTypeId),
+        userId: finalUserId,
+        lastSeenLocation: fullLocation,
         lastSeenDate: `${formData.get('lastSeenDate')}T12:00:00.000Z`,
-        color: selectedColor, 
+        color: selectedColor,
         description: (formData.get('description') as string) || 'Sin descripción',
         status: status,
       };
 
-      const response = await fetch('https://strike-haven-palace-diverse.trycloudflare.com/api/v1/bff/web/pets', { 
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bff/web/pets`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -180,7 +180,7 @@ export function ReportForm({
         try {
           const err = await response.json();
           message = err.message || message;
-        } catch {}
+        } catch { }
         throw new Error(message);
       }
 
@@ -212,14 +212,14 @@ export function ReportForm({
 
         <TabsContent value="perdido" className="mt-4">
           <p className="text-sm text-muted-foreground mb-4">
-            Completa los datos de tu mascota perdida. Mientras más información proporciones, 
+            Completa los datos de tu mascota perdida. Mientras más información proporciones,
             mejor será la probabilidad de encontrar coincidencias.
           </p>
         </TabsContent>
 
         <TabsContent value="encontrado" className="mt-4">
           <p className="text-sm text-muted-foreground mb-4">
-            Has encontrado una mascota y quieres ayudar a reunirla con su dueño. 
+            Has encontrado una mascota y quieres ayudar a reunirla con su dueño.
             Ingresa los datos del animal que encontraste.
           </p>
         </TabsContent>
@@ -258,8 +258,8 @@ export function ReportForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="petType">Tipo y Raza de Mascota</Label>
-              <Select 
-                value={selectedTypeId} 
+              <Select
+                value={selectedTypeId}
                 onValueChange={setSelectedTypeId}
                 disabled={loadingTypes}
               >
