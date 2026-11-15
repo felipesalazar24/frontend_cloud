@@ -1,6 +1,4 @@
-// src/app/ms/login.ts
-
-const LOGIN_URL = "https://vtfhilb6xc.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/login";
+const LOGIN_URL = "/api/v1/bff/web/login";
 
 export async function loginUser({
   email,
