@@ -75,7 +75,7 @@ export default function ReportePage() {
         if (petData.userId) {
           try {
             // Ajusta esta URL si tu endpoint para obtener un usuario por ID es diferente
-            const userResponse = await fetch(`https://vtfhilb6xc.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/users/${petData.userId}`, {
+            const userResponse = await fetch(`https://framework-requiring-methods-racks.trycloudflare.com/api/v1/bff/web/users/${petData.userId}`, {
               method: 'GET',
               headers: {
                 'Authorization': `Bearer ${tokenResponse.accessToken}`,
