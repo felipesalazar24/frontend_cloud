@@ -5,39 +5,49 @@ import { useRouter } from "next/navigation";
 import { useMsal, AuthenticatedTemplate } from "@azure/msal-react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Trash2, CheckCircle, AlertCircle, ShieldAlert } from "lucide-react";
+import { useApi } from "@/hooks/use-api";
 
 export default function AdminReportsPage() {
     const router = useRouter();
-    const { instance, accounts, inProgress } = useMsal();
+    const { accounts, inProgress } = useMsal();
+    const { fetchWithToken } = useApi(); // Utilizamos el hook centralizado
 
     const [reports, setReports] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // 1. Verificación estricta de ROL
+    useEffect(() => {
+        if (inProgress !== "none") return;
+        
+        if (accounts.length === 0) {
+            router.push("/login");
+            return;
+        }
+
+        const activeAccount = accounts[0];
+        const roles = (activeAccount.idTokenClaims?.roles as string[]) || [];
+        
+        if (!roles.includes("APPROLE_Admin")) {
+            // Expulsa a usuarios sin permisos
+            router.push("/");
+            return;
+        }
+    }, [accounts, inProgress, router]);
+
+    // 2. Carga de datos usando fetchWithToken
     useEffect(() => {
         const fetchReports = async () => {
+            if (accounts.length === 0 || inProgress !== "none") return;
+            
             try {
-                if (inProgress !== "none") return;
-                if (accounts.length === 0) {
-                    router.push("/login");
-                    return;
-                }
-
-                const tokenResponse = await instance.acquireTokenSilent({
-                    scopes: ["a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"],
-                    account: accounts[0]
-                });
-
-                const response = await fetch('https://ih20amtq1d.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/pets', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${tokenResponse.accessToken}`,
-                        'Content-Type': 'application/json'
-                    }
+                // Pasamos solo la ruta relativa; el hook se encarga de inyectar la URL del BFF y el Token
+                const response = await fetchWithToken('/bff/web/pets', {
+                    method: 'GET'
                 });
 
                 if (!response.ok) throw new Error("Error al cargar los reportes");
@@ -54,22 +64,14 @@ export default function AdminReportsPage() {
         };
 
         fetchReports();
-    }, [accounts, inProgress, instance, router]);
+    }, [accounts, inProgress, fetchWithToken]);
 
     const handleDelete = async (petId: string | number) => {
         if (!confirm("¿Estás seguro de que deseas eliminar este reporte de forma permanente?")) return;
 
         try {
-            const tokenResponse = await instance.acquireTokenSilent({
-                scopes: ["a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"],
-                account: accounts[0]
-            });
-
-            const response = await fetch(`https://ih20amtq1d.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/pets/${petId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${tokenResponse.accessToken}`
-                }
+            const response = await fetchWithToken(`/bff/web/pets/${petId}`, {
+                method: 'DELETE'
             });
 
             if (response.ok) {
@@ -88,22 +90,13 @@ export default function AdminReportsPage() {
         if (!confirm("¿Marcar esta mascota como reunida con su dueño?")) return;
 
         try {
-            const tokenResponse = await instance.acquireTokenSilent({
-                scopes: ["a4d3e345-3a3d-45e3-a248-a07a76da5e1b/.default"],
-                account: accounts[0]
-            });
-
             const updatedPetPayload = {
                 ...currentPetData,
                 status: "reunido"
             };
 
-            const response = await fetch(`https://ih20amtq1d.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/pets/${petId}`, {
+            const response = await fetchWithToken(`/bff/web/pets/${petId}`, {
                 method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${tokenResponse.accessToken}`,
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify(updatedPetPayload)
             });
 
@@ -187,7 +180,6 @@ export default function AdminReportsPage() {
                                     </div>
 
                                     <div className="flex items-center gap-2 w-full sm:w-auto mt-4 sm:mt-0">
-                                        {/* Botón para cambiar estado, se oculta si ya está reunido */}
                                         {String(report.status).toLowerCase() !== "reunido" && (
                                             <Button
                                                 variant="outline"
@@ -199,7 +191,6 @@ export default function AdminReportsPage() {
                                             </Button>
                                         )}
 
-                                        {/* Botón para eliminar */}
                                         <Button
                                             variant="destructive"
                                             className="flex-1 sm:flex-none gap-2"

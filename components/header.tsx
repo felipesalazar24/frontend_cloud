@@ -1,22 +1,42 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useMsal } from "@azure/msal-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { PawPrint, Menu, MapPin, Plus, User } from "lucide-react"
+import { PawPrint, Menu, MapPin, Plus, User, Settings } from "lucide-react"
 
 export function Header() {
   const [isOpen, setIsOpen] = useState<boolean>(false)
+  const { accounts } = useMsal()
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
 
+  // Verificamos el rol del usuario autenticado desde los claims del token de Entra ID
+  useEffect(() => {
+    if (accounts.length > 0) {
+      const activeAccount = accounts[0];
+      const roles = (activeAccount.idTokenClaims?.roles as string[]) || [];
+      setIsAdmin(roles.includes("APPROLE_Admin"));
+    } else {
+      setIsAdmin(false);
+    }
+  }, [accounts]);
+
+  // Construimos el menú base
   const navigation = [
     { name: "Mascotas", href: "/pets", icon: MapPin },
     { name: "Reportar", href: "/create-report", icon: Plus },
   ]
+
+  // Inyectamos condicionalmente la ruta de administración si el usuario tiene el rol
+  if (isAdmin) {
+    navigation.push({ name: "Administración", href: "/admin", icon: Settings })
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
