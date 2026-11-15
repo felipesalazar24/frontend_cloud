@@ -1,4 +1,4 @@
-const BASE_URL = 'https://vtfhilb6xc.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/pets';
+const BASE_URL = 'https://framework-requiring-methods-racks.trycloudflare.com/api/v1/bff/web/pets';
 
 export type AgeCategory = 'joven' | 'adulto' | 'viejo';
 
