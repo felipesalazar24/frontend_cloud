@@ -16,24 +16,24 @@ export function Header() {
   const { accounts } = useMsal()
   const [isAdmin, setIsAdmin] = useState<boolean>(false)
 
-  // Verificamos el rol del usuario autenticado desde los claims del token de Entra ID
   useEffect(() => {
     if (accounts.length > 0) {
       const activeAccount = accounts[0];
       const roles = (activeAccount.idTokenClaims?.roles as string[]) || [];
-      setIsAdmin(roles.includes("APPROLE_Admin"));
+      const hasAdminRole = roles.some(
+        (role) => role.toLowerCase() === "admin" || role.toLowerCase() === "approle_admin"
+      );
+      setIsAdmin(hasAdminRole);
     } else {
       setIsAdmin(false);
     }
   }, [accounts]);
 
-  // Construimos el menú base
   const navigation = [
     { name: "Mascotas", href: "/pets", icon: MapPin },
     { name: "Reportar", href: "/create-report", icon: Plus },
   ]
 
-  // Inyectamos condicionalmente la ruta de administración si el usuario tiene el rol
   if (isAdmin) {
     navigation.push({ name: "Administración", href: "/admin", icon: Settings })
   }
@@ -89,7 +89,7 @@ export function Header() {
                 </div>
                 <span className="text-lg font-semibold">Sanos y Salvos</span>
               </Link>
-              
+
               {navigation.map((item) => (
                 <Link key={item.name} href={item.href} onClick={() => setIsOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start gap-2">
@@ -98,7 +98,7 @@ export function Header() {
                   </Button>
                 </Link>
               ))}
-              
+
               <div className="border-t pt-4 mt-4 space-y-2">
                 <Link href="/profile" onClick={() => setIsOpen(false)}>
                   <Button variant="outline" className="w-full justify-start gap-2">

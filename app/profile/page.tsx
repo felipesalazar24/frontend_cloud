@@ -10,13 +10,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, PawPrint, Settings, LogOut, MapPin, Calendar, Eye } from "lucide-react";
 import Link from "next/link";
 import { useMsal, AuthenticatedTemplate } from "@azure/msal-react";
+import { getPetImage, getPetPlaceholder } from "@/lib/pet-helper";
 
 export default function ProfilePage() {
   const { instance, accounts, inProgress } = useMsal();
   const activeAccount = accounts[0];
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8084/api/v1";
 
   const userRoles = (activeAccount?.idTokenClaims as any)?.roles || [];
-  const isAdmin = userRoles.includes("Admin");
+  const isAdmin = userRoles.some(
+    (role: string) => role.toLowerCase() === "admin" || role.toLowerCase() === "approle_admin"
+  );
 
   const [userReports, setUserReports] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -27,41 +31,44 @@ export default function ProfilePage() {
         if (inProgress !== "none") return;
         if (accounts.length === 0) return;
 
-        const activeAccount = accounts[0];
-        const email = activeAccount.username;
+        const currentAccount = accounts[0];
+        const email = currentAccount.username;
 
         const tokenResponse = await instance.acquireTokenSilent({
           scopes: ["api://a4d3e345-3a3d-45e3-a248-a07a76da5e1b/access_as_user"],
-          account: activeAccount
+          account: currentAccount,
         });
         const token = tokenResponse.accessToken;
 
         let myUserId = null;
-        const userResponse = await fetch(`https://vtfhilb6xc.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/users/profile?email=${encodeURIComponent(email)}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+        const userResponse = await fetch(
+          `${apiUrl}/bff/web/users/profile?email=${encodeURIComponent(email)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           }
-        });
-        
+        );
+
         if (userResponse.ok) {
           const userData = await userResponse.json();
           myUserId = Number(userData.id);
         }
 
-        const petsResponse = await fetch('https://vtfhilb6xc.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/pets', {
-          method: 'GET',
+        const petsResponse = await fetch(`${apiUrl}/bff/web/pets`, {
+          method: "GET",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
 
         if (petsResponse.ok) {
           const data = await petsResponse.json();
-          const allPets = Array.isArray(data) ? data : (data.collection || []);
-          
+          const allPets = Array.isArray(data) ? data : data.collection || [];
+
           if (myUserId && !isNaN(myUserId)) {
             const myPets = allPets.filter((pet: any) => pet.userId === myUserId);
             setUserReports(myPets);
@@ -77,7 +84,7 @@ export default function ProfilePage() {
     };
 
     loadProfileAndReports();
-  }, [accounts, inProgress, instance]);
+  }, [accounts, inProgress, instance, apiUrl]);
 
   const handleLogout = (): void => {
     instance.logoutRedirect({
@@ -85,176 +92,193 @@ export default function ProfilePage() {
     });
   };
 
-  const activeReports = userReports.filter(
-    (r) =>
-      String(r.status).toLowerCase() === "activo" ||
-      String(r.status).toLowerCase() === "perdido" ||
-      String(r.status).toLowerCase() === "encontrado"
+  const activeReports = userReports.filter((r) => {
+    const status = String(r.status || "").toLowerCase();
+    return status === "activo" || status === "perdido" || status === "encontrado";
+  });
+
+  const reunitedReports = userReports.filter(
+    (r) => String(r.status || "").toLowerCase() === "reunido"
   );
 
-  const displayName = activeAccount?.name || "Usuario de Prueba";
+  const displayName = activeAccount?.name || "Usuario";
   const displayEmail = activeAccount?.username || "correo@ejemplo.com";
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Cargando perfil seguro...
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          Cargando perfil seguro...
+        </main>
+        <Footer />
       </div>
     );
   }
 
   return (
     <AuthenticatedTemplate>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-background">
         <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          {isAdmin && (
-            <div className="mb-6 bg-red-50 border border-red-200 p-4 rounded-lg">
-              <h3 className="text-red-800 font-bold flex items-center gap-2">
-                <Settings className="w5 h-5" />
-                Panel de Administrador
-              </h3>
-              <p className="text-sm text-red-600 mb-3">
-                Tienes permisos de administrador en el sistema. Puedes acceder a funciones avanzadas y gestionar reportes.
-              </p>
-              <Link href="/admin/reports">
-                <Button variant="destructive">Gestionar Reportes</Button>
-              </Link>
-            </div>
-          )}
-          <div className="max-w-4xl mx-auto space-y-6">
-            <Card>
-              <CardContent className="py-6">
-                <div className="flex flex-col sm:flex-row items-center gap-6">
-                  <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-10 w-10 text-primary" />
-                  </div>
-                  <div className="text-center sm:text-left flex-1">
-                    <h1 className="text-2xl font-bold capitalize">
-                      {displayName}
-                    </h1>
-                    <p className="text-muted-foreground">{displayEmail}</p>
-                  </div>
-                  <div>
-                    <Button
-                      variant="outline"
-                      className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
-                      onClick={handleLogout}
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Cerrar Sesión
-                    </Button>
-                  </div>
+        <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl space-y-6">
+          {/* Cabecera del Perfil */}
+          <Card>
+            <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <User className="w-8 h-8" />
                 </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold">{displayName}</h1>
+                    {isAdmin && <Badge variant="secondary">Admin</Badge>}
+                  </div>
+                  <p className="text-muted-foreground">{displayEmail}</p>
+                </div>
+              </div>
+
+              <Button variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10 gap-2" onClick={handleLogout}>
+                <LogOut className="w-4 h-4" />
+                Cerrar Sesión
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Estadísticas (3 columnas, sin Alertas) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-3xl font-bold text-primary">{userReports.length}</p>
+                <p className="text-sm text-muted-foreground mt-1">Mis Reportes</p>
               </CardContent>
             </Card>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <div className="text-3xl font-bold text-primary">
-                    {userReports.length}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Mis Reportes
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <div className="text-3xl font-bold text-accent-foreground">
-                    {activeReports.length}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Activos</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <div className="text-3xl font-bold">0</div>
-                  <div className="text-sm text-muted-foreground">
-                    Reencuentros
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <div className="text-3xl font-bold">0</div>
-                  <div className="text-sm text-muted-foreground">Alertas</div>
-                </CardContent>
-              </Card>
-            </div>
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-3xl font-bold text-amber-600">{activeReports.length}</p>
+                <p className="text-sm text-muted-foreground mt-1">Activos</p>
+              </CardContent>
+            </Card>
 
-            <Tabs defaultValue="reports">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="reports" className="gap-2">
-                  <PawPrint className="h-4 w-4" />
-                  Mis Reportes
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="gap-2">
-                  <Settings className="h-4 w-4" />
-                  Ver mi Información
-                </TabsTrigger>
-              </TabsList>
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-3xl font-bold text-green-600">{reunitedReports.length}</p>
+                <p className="text-sm text-muted-foreground mt-1">Reencuentros</p>
+              </CardContent>
+            </Card>
+          </div>
 
-              <TabsContent value="reports" className="mt-6 space-y-4">
-                {userReports.length === 0 ? (
-                  <Card>
-                    <CardContent className="py-12 text-center">
-                      <PawPrint className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="font-semibold mb-2">No tienes reportes</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Crea tu primer reporte para comenzar a buscar o ayudar a
-                        reunir mascotas.
-                      </p>
-                      <Link href="/create-report">
-                        <Button>Crear Reporte</Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  userReports.map((report) => (
-                    <Card key={report.id}>
-                       {/* Contenido de reportes mantenido intacto */}
-                    </Card>
-                  ))
-                )}
+          {/* Pestañas */}
+          <Tabs defaultValue="reports" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="reports" className="gap-2">
+                <PawPrint className="w-4 h-4" />
+                Mis Reportes
+              </TabsTrigger>
+              <TabsTrigger value="info" className="gap-2">
+                <Settings className="w-4 h-4" />
+                Ver mi Información
+              </TabsTrigger>
+            </TabsList>
 
-                <Link href="/create-report">
-                  <Button variant="outline" className="w-full gap-2">
-                    <PawPrint className="h-4 w-4" />
-                    Crear Nuevo Reporte
-                  </Button>
-                </Link>
-              </TabsContent>
-
-              <TabsContent value="settings" className="mt-6 space-y-4">
+            {/* Lista de Reportes */}
+            <TabsContent value="reports" className="space-y-4">
+              {userReports.length === 0 ? (
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Información Personal</CardTitle>
-                    <CardDescription>
-                      Datos obtenidos de forma segura desde Microsoft Entra ID.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Nombre Completo
-                        </p>
-                        <p className="font-medium capitalize">{displayName}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Email</p>
-                        <p className="font-medium">{displayEmail}</p>
-                      </div>
-                    </div>
+                  <CardContent className="p-10 text-center text-muted-foreground">
+                    Aún no has creado ningún reporte de mascota.
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </main>
+              ) : (
+                userReports.map((report) => (
+                  <Card key={report.id}>
+                    <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 w-full sm:w-auto">
+                        <img
+                          src={getPetImage(report)}
+                          alt={report.name || "Mascota"}
+                          className="w-16 h-16 rounded-md object-cover bg-muted"
+                          onError={(e) => {
+                            e.currentTarget.src = getPetPlaceholder(report);
+                          }}
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-lg capitalize">
+                              {report.name || "Sin nombre"}
+                            </h3>
+                            <Badge
+                              variant={
+                                String(report.status).toLowerCase() === "perdido"
+                                  ? "destructive"
+                                  : String(report.status).toLowerCase() === "reunido"
+                                    ? "default"
+                                    : "secondary"
+                              }
+                              className="capitalize"
+                            >
+                              {report.status || "Activo"}
+                            </Badge>
+                          </div>
 
+                          <div className="flex flex-wrap items-center gap-4 mt-1 text-sm text-muted-foreground">
+                            {(report.location || report.address || report.lastSeenLocation) && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5" />
+                                {report.location || report.address || report.lastSeenLocation}
+                              </span>
+                            )}
+                            {(report.createdAt || report.date || report.lastSeenDate) && (
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3.5 h-3.5" />
+                                {new Date(
+                                  report.createdAt || report.date || report.lastSeenDate
+                                ).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button variant="outline" size="sm" asChild className="w-full sm:w-auto gap-2">
+                        <Link href={`/api/v1/bff/web/pets/${report.id}`}>
+                          <Eye className="w-4 h-4" />
+                          Ver detalle
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </TabsContent>
+
+            {/* Información de la cuenta */}
+            <TabsContent value="info">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Información de la Cuenta</CardTitle>
+                  <CardDescription>
+                    Datos sincronizados con Microsoft Entra ID.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Nombre</p>
+                    <p className="text-base">{displayName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Correo Electrónico</p>
+                    <p className="text-base">{displayEmail}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Rol</p>
+                    <Badge variant="outline">{isAdmin ? "Administrador" : "Usuario"}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </main>
         <Footer />
       </div>
     </AuthenticatedTemplate>

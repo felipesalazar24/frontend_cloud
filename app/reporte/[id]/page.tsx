@@ -10,14 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { 
-  MapPin, 
-  Calendar, 
-  Phone, 
-  Mail, 
-  User, 
-  ArrowLeft, 
-  Share2, 
+import {
+  MapPin,
+  Calendar,
+  Phone,
+  Mail,
+  User,
+  ArrowLeft,
+  Share2,
   Flag,
   Dog,
   Cat,
@@ -36,11 +36,12 @@ export default function ReportePage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
-  
+
   const { instance, accounts, inProgress } = useMsal();
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8084/api/v1';
 
   useEffect(() => {
     const fetchPetDetails = async () => {
@@ -68,21 +69,21 @@ export default function ReportePage() {
         });
 
         if (!petResponse.ok) throw new Error("Mascota no encontrada en la base de datos.");
-        
+
         const petData = await petResponse.json();
 
         // 2. Si la mascota tiene un userId, buscamos los datos de contacto
         if (petData.userId) {
           try {
             // Ajusta esta URL si tu endpoint para obtener un usuario por ID es diferente
-            const userResponse = await fetch(`https://vtfhilb6xc.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/users/${petData.userId}`, {
+            const userResponse = await fetch(`${apiUrl}/bff/web/users/${petData.userId}`, {
               method: 'GET',
               headers: {
                 'Authorization': `Bearer ${tokenResponse.accessToken}`,
                 'Content-Type': 'application/json'
               }
             });
-            
+
             if (userResponse.ok) {
               const userData = await userResponse.json();
               // Insertamos los datos del usuario dentro del objeto de la mascota para que la interfaz los lea
@@ -137,7 +138,7 @@ export default function ReportePage() {
   const PetIcon = petTypeIcons[String(petTypeStr).toLowerCase()] || HelpCircle;
   const statusLower = String(report.status).toLowerCase();
   const isLost = statusLower === 'perdido' || statusLower === 'extraviado';
-  
+
   // Variables de contacto (Si tu BFF aún no trae los datos del usuario, mostrará fallbacks seguros)
   const contactName = report.contactName || report.userName || "Usuario Registrado";
   const contactPhone = report.contactPhone || report.userPhone;
@@ -146,7 +147,7 @@ export default function ReportePage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
+
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Back Button */}
@@ -167,7 +168,7 @@ export default function ReportePage() {
                     className="w-full h-full object-cover"
                     crossOrigin="anonymous"
                   />
-                  <Badge 
+                  <Badge
                     className="absolute top-4 left-4 text-sm px-3 py-1 capitalize"
                     variant={isLost ? 'destructive' : 'default'}
                   >
@@ -223,7 +224,7 @@ export default function ReportePage() {
                           {isLost ? 'Última vez visto' : 'Fecha de reporte'}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {report.lastSeenDate || report.createdAt ? 
+                          {report.lastSeenDate || report.createdAt ?
                             new Date(report.lastSeenDate || report.createdAt).toLocaleDateString('es-CL', {
                               weekday: 'long',
                               year: 'numeric',
@@ -275,7 +276,7 @@ export default function ReportePage() {
                   </div>
 
                   <Separator />
-                  
+
                   {contactPhone ? (
                     <a href={`tel:${contactPhone}`} className="block">
                       <Button className="w-full gap-2" size="lg">
@@ -285,8 +286,8 @@ export default function ReportePage() {
                     </a>
                   ) : (
                     <Button disabled className="w-full gap-2" size="lg">
-                        <Phone className="h-4 w-4" />
-                        Teléfono no provisto
+                      <Phone className="h-4 w-4" />
+                      Teléfono no provisto
                     </Button>
                   )}
 

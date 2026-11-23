@@ -1,9 +1,14 @@
-import Link from "next/link"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useMsal } from "@azure/msal-react";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { getPetImage, getPetPlaceholder } from "@/lib/pet-helper";
 import {
   PawPrint,
   MapPin,
@@ -16,15 +21,141 @@ import {
   Dog,
   Cat,
   Building2,
-  Heart
-} from "lucide-react"
-import { mockReports } from "@/lib/mock-data"
-import { ReportCard } from "@/components/report-card"
+  Heart,
+  Eye,
+} from "lucide-react";
 
 export default function HomePage() {
-  const recentReports = mockReports.slice(0, 3)
-  const lostCount = mockReports.filter(r => r.type === 'perdido').length
-  const foundCount = mockReports.filter(r => r.type === 'encontrado').length
+  const { instance, accounts, inProgress } = useMsal();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8084/api/v1";
+
+  const [pets, setPets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPets = async () => {
+      if (inProgress !== "none") return;
+
+      try {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+
+        if (accounts.length > 0) {
+          try {
+            const tokenResponse = await instance.acquireTokenSilent({
+              scopes: ["api://a4d3e345-3a3d-45e3-a248-a07a76da5e1b/access_as_user"],
+              account: accounts[0],
+            });
+            headers["Authorization"] = `Bearer ${tokenResponse.accessToken}`;
+          } catch (tokenErr) {
+            console.warn("No se pudo obtener token silencioso en Home:", tokenErr);
+          }
+        }
+
+        const response = await fetch(`${apiUrl}/bff/web/pets`, {
+          method: "GET",
+          headers,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const allPets = Array.isArray(data) ? data : data.collection || [];
+          setPets(allPets);
+        }
+      } catch (err) {
+        console.error("Error cargando estadísticas en Home:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPets();
+  }, [accounts.length, inProgress, instance, apiUrl]);
+
+  // Cálculo dinámico de métricas reales
+  const lostCount = pets.filter(
+    (p) => String(p.status || "").toLowerCase() === "perdido"
+  ).length;
+
+  const foundCount = pets.filter(
+    (p) => String(p.status || "").toLowerCase() === "encontrado"
+  ).length;
+
+  const reunitedCount = pets.filter(
+    (p) => String(p.status || "").toLowerCase() === "reunido"
+  ).length;
+
+  const reunionRate =
+    pets.length > 0 ? Math.round((reunitedCount / pets.length) * 100) : 0;
+
+  const recentReports = pets.slice(0, 3);
+
+  const getStatusVariant = (status?: string) => {
+    const normalized = String(status || "").toLowerCase();
+    if (normalized === "perdido") return "destructive";
+    if (normalized === "reunido") return "default";
+    return "secondary";
+  };
+
+  const renderRecentReports = () => {
+    if (loading) {
+      return (
+        <div className="col-span-full text-center p-8 border rounded-lg bg-muted/20">
+          <p className="text-muted-foreground">Cargando reportes recientes...</p>
+        </div>
+      );
+    }
+
+    if (recentReports.length === 0) {
+      return (
+        <div className="col-span-full text-center p-8 border rounded-lg bg-muted/20">
+          <p className="text-muted-foreground">
+            Inicia sesión o crea el primer reporte para ver mascotas recientes.
+          </p>
+        </div>
+      );
+    }
+
+    return recentReports.map((pet) => (
+      <Card key={pet.id} className="overflow-hidden flex flex-col">
+        <img
+          src={getPetImage(pet)}
+          alt={pet.name || "Mascota"}
+          className="w-full h-48 object-cover bg-muted"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = getPetPlaceholder(pet);
+          }}
+        />
+        <CardContent className="p-4 flex-1 flex flex-col justify-between gap-4">
+          <div>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <h3 className="font-semibold text-lg capitalize">
+                {pet.name || "Sin nombre"}
+              </h3>
+              <Badge variant={getStatusVariant(pet.status)} className="capitalize">
+                {pet.status || "Activo"}
+              </Badge>
+            </div>
+            {(pet.location || pet.address || pet.lastSeenLocation) && (
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5" />
+                {pet.location || pet.address || pet.lastSeenLocation}
+              </p>
+            )}
+          </div>
+
+          <Button variant="outline" size="sm" asChild className="w-full gap-2">
+            <Link href={`/api/v1/bff/web/pets/${pet.id}`}>
+              <Eye className="h-4 w-4" />
+              Ver detalle
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+    ));
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -65,21 +196,37 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Tarjeta de Estadísticas en Tiempo Real (4 columnas) */}
           <div className="container mx-auto px-4 mt-16">
-            <Card className="max-w-3xl mx-auto">
+            <Card className="max-w-4xl mx-auto">
               <CardContent className="py-6">
-                <div className="grid grid-cols-3 divide-x">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x">
                   <div className="text-center px-4">
-                    <div className="text-3xl font-bold text-destructive">{lostCount}</div>
-                    <div className="text-sm text-muted-foreground">Mascotas Perdidas</div>
+                    <div className="text-3xl font-bold text-red-600">
+                      {loading ? "..." : lostCount}
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">Mascotas Perdidas</div>
                   </div>
+
                   <div className="text-center px-4">
-                    <div className="text-3xl font-bold text-accent-foreground">{foundCount}</div>
-                    <div className="text-sm text-muted-foreground">Mascotas Encontradas</div>
+                    <div className="text-3xl font-bold text-amber-600">
+                      {loading ? "..." : foundCount}
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">Mascotas Encontradas</div>
                   </div>
+
                   <div className="text-center px-4">
-                    <div className="text-3xl font-bold text-primary">85%</div>
-                    <div className="text-sm text-muted-foreground">Tasa de Reencuentro</div>
+                    <div className="text-3xl font-bold text-green-600">
+                      {loading ? "..." : reunitedCount}
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">Mascotas Reunidas</div>
+                  </div>
+
+                  <div className="text-center px-4">
+                    <div className="text-3xl font-bold text-primary">
+                      {loading ? "..." : `${reunionRate}%`}
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">Tasa de Reencuentro</div>
                   </div>
                 </div>
               </CardContent>
@@ -151,6 +298,7 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Reportes Recientes Reales */}
         <section className="py-20">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between mb-8">
@@ -167,9 +315,7 @@ export default function HomePage() {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="col-span-full text-center p-8 border rounded-lg bg-muted/20">
-                <p className="text-muted-foreground">Los reportes recientes se están sincronizando con la base de datos...</p>
-              </div>
+              {renderRecentReports()}
             </div>
           </div>
         </section>
@@ -254,7 +400,11 @@ export default function HomePage() {
                     </Button>
                   </Link>
                   <Link href="/pets">
-                    <Button size="lg" variant="outline" className="w-full sm:w-auto gap-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full sm:w-auto gap-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                    >
                       <MapPin className="h-5 w-5" />
                       Ver Mascotas
                     </Button>
@@ -294,5 +444,5 @@ export default function HomePage() {
 
       <Footer />
     </div>
-  )
+  );
 }
