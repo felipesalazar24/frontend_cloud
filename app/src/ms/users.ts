@@ -1,6 +1,7 @@
 // app/src/ms/users.ts
 
-const BASE_URL = 'https://vtfhilb6xc.execute-api.us-east-1.amazonaws.com/api/v1/bff/web/users';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8084/api/v1';
+const BASE_URL = `${API_URL}/bff/web/users`;
 
 function getAuthHeader(): Record<string, string> {
   if (typeof window !== "undefined") {
