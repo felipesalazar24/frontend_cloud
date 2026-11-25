@@ -23,7 +23,7 @@ import {
 import { useApi } from "@/hooks/use-api";
 
 const KAFKA_UI_URL = process.env.NEXT_PUBLIC_KAFKA_UI_URL || "http://a3a9e0a00d9bc49a78a688317c2aa14c-1713066052.us-east-1.elb.amazonaws.com:8090";
-const RABBIT_UI_URL = process.env.NEXT_PUBLIC_RABBIT_UI_URL || "http://a6c6f58fd80354d40b435351ad8a6637-1971749621.us-east-1.elb.amazonaws.com:15672";
+const RABBIT_UI_URL = process.env.NEXT_PUBLIC_RABBIT_UI_URL || "http://aa9b47b76c0a14d169e86c05c1041e7f-1649374201.us-east-1.elb.amazonaws.com:15672";
 
 export default function AdminReportsPage() {
   const router = useRouter();
